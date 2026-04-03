@@ -30,7 +30,7 @@ const TABS: Tab[] = [
     renderContent: () => (
       <Suspense fallback={<BugReportFormSkeleton />}>
         <BugReportForm
-          onSubmit={async (data: unknown): Promise<void> => {
+          onSubmit={async (data): Promise<void> => {
             console.log('Bug report submitted with:', data)
             await delay(3000)
             toast.success('Bug report submitted successfully!', TOAST_OPTIONS)
@@ -45,8 +45,8 @@ const TABS: Tab[] = [
     renderContent: () => (
       <Suspense fallback={<RegisterFormSkeleton />}>
         <RegisterForm
-          onSubmit={async (data: unknown): Promise<void> => {
-            console.log('Registration form submitted with:', data)
+          onSubmit={async (parsedData): Promise<void> => {
+            console.log('Registration form submitted with:', parsedData)
             await delay(3000)
             toast.success('Registration successful!', TOAST_OPTIONS)
           }}
@@ -60,8 +60,8 @@ const TABS: Tab[] = [
     renderContent: () => (
       <Suspense fallback={<ExpenseTrackerSkeleton />}>
         <ExpenseTrackerForm
-          onSubmit={async (data: unknown): Promise<void> => {
-            console.log('Expense tracker form submitted with:', data)
+          onSubmit={async (parsedData): Promise<void> => {
+            console.log('Expense tracker form submitted with:', parsedData)
             await delay(3000)
             toast.success(
               'Expense tracker form submitted successfully!',

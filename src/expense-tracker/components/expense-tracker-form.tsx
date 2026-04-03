@@ -38,7 +38,7 @@ import {
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useFormRefs } from '@/shared/hooks'
 import { cn } from '@/shared/lib/utils'
-import { focusFirstErrorField } from '@/shared/utilities'
+import { capitalize, focusFirstErrorField } from '@/shared/utilities'
 
 const NO_SELECTION = '__NONE__'
 
@@ -196,9 +196,7 @@ function ExpenseTrackerForm({ className, onSubmit }: ExpenseTrackerFormProps) {
                     field.state.meta.isTouched && !field.state.meta.isValid
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        Category <span className="text-destructive">*</span>
-                      </FieldLabel>
+                      <FieldLabel htmlFor={field.name}>Category</FieldLabel>
                       <Select
                         name={field.name}
                         // Value adapter to ensure React always treats the component
@@ -218,7 +216,6 @@ function ExpenseTrackerForm({ className, onSubmit }: ExpenseTrackerFormProps) {
                           ref={setRef(field.name)}
                           onBlur={field.handleBlur}
                           data-testid={`select-trigger-${field.name}`}
-                          aria-required
                           aria-invalid={isInvalid}
                           aria-describedby={`${field.name}-error`}
                         >
@@ -227,9 +224,10 @@ function ExpenseTrackerForm({ className, onSubmit }: ExpenseTrackerFormProps) {
                         <SelectContent>
                           <SelectGroup>
                             <SelectLabel>Categories</SelectLabel>
+
                             {CATEGORIES.map((category) => (
                               <SelectItem key={category} value={category}>
-                                {category}
+                                {capitalize(category)}
                               </SelectItem>
                             ))}
                             {field.state.value && (

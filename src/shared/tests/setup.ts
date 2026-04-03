@@ -17,6 +17,11 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 })
 
+// jsdom doesn't implement ResizeObserver — mock it so Radix UI components don't throw
+window.ResizeObserver = vi.fn().mockImplementation(function () {
+  return { observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn() }
+})
+
 // jsdom doesn't implement scrollIntoView nor the Pointer Capture API
 // must be mocked it so Radix UI components don't throw
 Element.prototype.scrollIntoView = vi.fn()

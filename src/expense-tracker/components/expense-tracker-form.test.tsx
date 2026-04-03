@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { ExpenseTrackerForm } from '@/expense-tracker/components'
 import { CATEGORIES } from '@/expense-tracker/schemas'
 import { setupFormSubmission } from '@/shared/tests/utils'
@@ -132,7 +133,9 @@ describe('ExpenseTrackerForm', () => {
       await user.type(descriptionInput, validFormData.description)
 
       await waitFor(() =>
-        expect(screen.queryByText(/must be/i)).not.toBeInTheDocument(),
+        expect(
+          screen.queryByText(/description must be/i),
+        ).not.toBeInTheDocument(),
       )
     })
 
@@ -261,7 +264,7 @@ describe('ExpenseTrackerForm', () => {
       expect(addNewExpenseButton).toBeInTheDocument()
     })
 
-    it('calls onSubmit with category undefined none is selected', async () => {
+    it('calls onSubmit without category when none is selected', async () => {
       const { descriptionInput, amountInput, submitButton } = getFormElements()
 
       await ctx.user.type(descriptionInput, validFormData.description)
@@ -272,7 +275,6 @@ describe('ExpenseTrackerForm', () => {
       expect(ctx.mockOnSubmit).toHaveBeenCalledWith({
         description: validFormData.description,
         amount: validFormData.amount,
-        category: undefined,
       })
     })
 
