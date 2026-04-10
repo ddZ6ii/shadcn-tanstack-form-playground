@@ -157,7 +157,8 @@ describe('BugReportForm', () => {
     }
 
     it('shows spinner and disables fieldset while submitting', async () => {
-      const { titleInput, descriptionInput, submitButton } = getFormElements()
+      const { titleInput, descriptionInput, resetButton, submitButton } =
+        getFormElements()
 
       await ctx.user.type(titleInput, validFormData.title)
       await ctx.user.type(descriptionInput, validFormData.description)
@@ -166,12 +167,12 @@ describe('BugReportForm', () => {
       // submitValidForm() cannot be used since it awaits the click, which waits for the whole submission to complete before returning.
       void ctx.user.click(submitButton)
 
-      const submittingButton = await screen.findByRole('button', {
-        name: /submitting/i,
-      })
+      await screen.findByRole('button', { name: /submit\.\.\./i })
 
-      expect(submittingButton).toBeInTheDocument()
-      expect(submittingButton.closest('fieldset')).toBeDisabled()
+      expect(titleInput).toBeDisabled()
+      expect(descriptionInput).toBeDisabled()
+      expect(submitButton).toBeDisabled()
+      expect(resetButton).toBeDisabled()
     })
 
     it('calls onSubmit with correct form data', async () => {
