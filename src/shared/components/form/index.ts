@@ -1,6 +1,7 @@
 export { default as FieldSetField } from './fieldset-field'
 export { FormCard, FormCardSkeleton } from './form-card'
 export { default as ResetButton } from './reset-button'
+export { default as SelectField } from './select-field'
 export { default as SubmitButton } from './submit-button'
 export { default as TextAreaField } from './textarea-field'
 export { default as TextField } from './text-field'

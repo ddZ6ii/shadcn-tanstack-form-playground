@@ -4,6 +4,7 @@ import { fieldContext, formContext } from './form.context'
 import {
   FieldSetField,
   ResetButton,
+  SelectField,
   SubmitButton,
   TextAreaField,
   TextField,
@@ -11,6 +12,7 @@ import {
 
 const { useAppForm } = createFormHook({
   fieldComponents: {
+    SelectField,
     TextField,
     TextAreaField,
   },

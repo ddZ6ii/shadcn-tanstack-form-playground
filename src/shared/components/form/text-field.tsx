@@ -19,7 +19,7 @@ function TextField({
   description,
   ...props
 }: TextFieldProps) {
-  const field = useFieldContext<string>()
+  const field = useFieldContext<string | number | undefined>()
 
   const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
 
@@ -30,13 +30,19 @@ function TextField({
       </FieldLabel>
       {description && <FieldDescription>{description}</FieldDescription>}
       <Input
-        {...props}
         type="text"
+        {...props}
         id={field.name}
         value={field.state.value}
         onBlur={field.handleBlur}
         onChange={(e) => {
-          field.handleChange(e.target.value)
+          // Handle both input type="text" and type="number" cases.
+          // Value adapter allowing empty string for controlled input (while still keeping number undefined internally if initial value is undefined).
+          field.handleChange(
+            props.type === 'number' && e.target.value !== ''
+              ? e.target.valueAsNumber
+              : e.target.value,
+          )
         }}
         aria-invalid={isInvalid}
         aria-describedby={[props['aria-describedby'], `${field.name}-error`]

@@ -23,6 +23,7 @@ describe('ExpenseTrackerForm', () => {
       amountInput: screen.getByLabelText(/amount/i),
       categorySelect: screen.getByLabelText(/category/i),
       selectTrigger: screen.getByTestId('select-trigger-category'),
+      resetButton: screen.getByRole('button', { name: /reset/i }),
       submitButton: screen.getByRole('button', { name: /submit/i }),
     }
   }
@@ -37,19 +38,31 @@ describe('ExpenseTrackerForm', () => {
     })
 
     it('renders form with description field, amount field, category select and submit button', () => {
-      const { descriptionInput, amountInput, categorySelect, submitButton } =
-        getFormElements()
+      const {
+        descriptionInput,
+        amountInput,
+        categorySelect,
+        resetButton,
+        submitButton,
+      } = getFormElements()
 
       expect(descriptionInput).toBeInTheDocument()
       expect(amountInput).toBeInTheDocument()
       expect(categorySelect).toBeInTheDocument()
       expect(submitButton).toBeInTheDocument()
+      expect(resetButton).toBeInTheDocument()
     })
 
     it('submit button is enabled on fresh load', () => {
       const { submitButton } = getFormElements()
 
       expect(submitButton).toBeEnabled()
+    })
+
+    it('disables Reset button when form is pristine', () => {
+      const { resetButton } = getFormElements()
+
+      expect(resetButton).toBeDisabled()
     })
 
     it('does not show Clear Selection before a category is selected', async () => {
@@ -98,6 +111,25 @@ describe('ExpenseTrackerForm', () => {
         })
         expect(option).toBeInTheDocument()
       }
+    })
+
+    it('clears fields when Reset button is clicked', async () => {
+      const categoryName = new RegExp(validFormData.category, 'i')
+      const { amountInput, descriptionInput, resetButton, selectTrigger } =
+        getFormElements()
+
+      await user.type(amountInput, '100')
+      await user.type(descriptionInput, 'Some description text here')
+      await user.click(selectTrigger)
+      await user.click(
+        await screen.findByRole('option', { name: categoryName }),
+      )
+
+      await user.click(resetButton)
+
+      expect(descriptionInput).toHaveValue('')
+      expect(amountInput).toHaveValue(null)
+      expect(screen.getByText(/select a category/i)).toBeInTheDocument()
     })
   })
 
@@ -186,8 +218,13 @@ describe('ExpenseTrackerForm', () => {
 
     it('shows spinner and disables fieldset while submitting', async () => {
       const name = new RegExp(validFormData.category, 'i')
-      const { descriptionInput, amountInput, selectTrigger, submitButton } =
-        getFormElements()
+      const {
+        descriptionInput,
+        amountInput,
+        selectTrigger,
+        resetButton,
+        submitButton,
+      } = getFormElements()
 
       await ctx.user.type(descriptionInput, validFormData.description)
       await ctx.user.type(amountInput, validFormData.amount.toString())
@@ -204,18 +241,14 @@ describe('ExpenseTrackerForm', () => {
 
       // Starts submission without awaiting to observe the loading state (fire-and-forget).
       // submitValidForm() cannot be used since it awaits the click, which waits for the whole submission to complete before returning.
-      const clickPromise = ctx.user.click(submitButton)
+      void ctx.user.click(submitButton)
 
-      const submittingButton = await screen.findByRole('button', {
-        name: /submitting/i,
-      })
+      await screen.findByRole('button', { name: /submit\.\.\./i })
 
-      expect(submittingButton).toBeInTheDocument()
-      expect(submittingButton.closest('fieldset')).toBeDisabled()
-
-      // Advance fake timers to resolve the delay() in onSubmit, then let the submission complete cleanly
-      vi.advanceTimersByTime(ctx.ms)
-      await clickPromise
+      expect(descriptionInput).toBeDisabled()
+      expect(amountInput).toBeDisabled()
+      expect(submitButton).toBeDisabled()
+      expect(resetButton).toBeDisabled()
     })
 
     it('calls onSubmit with correct form data', async () => {
