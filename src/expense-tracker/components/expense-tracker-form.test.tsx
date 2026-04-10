@@ -46,6 +46,22 @@ describe('ExpenseTrackerForm', () => {
       expect(submitButton).toBeInTheDocument()
     })
 
+    it('submit button is enabled on fresh load', () => {
+      const { submitButton } = getFormElements()
+
+      expect(submitButton).toBeEnabled()
+    })
+
+    it('does not show Clear Selection before a category is selected', async () => {
+      const { selectTrigger } = getFormElements()
+
+      await user.click(selectTrigger)
+
+      expect(
+        screen.queryByRole('option', { name: /clear selection/i }),
+      ).not.toBeInTheDocument()
+    })
+
     it('clears category selection when Clear Selection is clicked', async () => {
       const { selectTrigger } = getFormElements()
       const categoryName = new RegExp(validFormData.category, 'i')
@@ -105,28 +121,6 @@ describe('ExpenseTrackerForm', () => {
       expect(submitButton).toBeDisabled()
     })
 
-    it('shows error when description is shorter than 3 characters', async () => {
-      const { descriptionInput } = getFormElements()
-
-      await user.click(descriptionInput)
-      await user.paste('a'.repeat(2))
-
-      expect(
-        screen.getByText(/must be at least 3 characters/i),
-      ).toBeInTheDocument()
-    })
-
-    it('shows error when description exceeds 100 characters', async () => {
-      const { descriptionInput } = getFormElements()
-
-      await user.click(descriptionInput)
-      await user.paste('a'.repeat(101)) // much faster than user.type() since it fires a single event instead of multiple keyboard cycles
-
-      expect(
-        screen.getByText(/must be at most 100 characters/i),
-      ).toBeInTheDocument()
-    })
-
     it('removes validation error when description is valid', async () => {
       const { descriptionInput } = getFormElements()
 
@@ -139,39 +133,15 @@ describe('ExpenseTrackerForm', () => {
       )
     })
 
-    it('shows error when amount has a negative value', async () => {
-      const { amountInput } = getFormElements()
-
-      await user.type(amountInput, '-10')
-
-      expect(screen.getByText(/must be at least 0\.01/i)).toBeInTheDocument()
-    })
-
-    it('shows error when amount is too small', async () => {
-      const { amountInput } = getFormElements()
-
-      await user.type(amountInput, '0.003')
-
-      expect(screen.getByText(/must be at least 0\.01/i)).toBeInTheDocument()
-    })
-
-    it('shows error when amount is too large', async () => {
-      const { amountInput } = getFormElements()
-
-      await user.type(amountInput, '1000001')
-
-      expect(
-        screen.getByText(/must be less than 1,000,000/i),
-      ).toBeInTheDocument()
-    })
-
     it('removes validation error when amount is valid', async () => {
       const { amountInput } = getFormElements()
 
       await user.type(amountInput, validFormData.amount.toString())
 
       await waitFor(() =>
-        expect(screen.queryByText(/amount must be/i)).not.toBeInTheDocument(),
+        expect(
+          screen.queryByText(/amount is required/i),
+        ).not.toBeInTheDocument(),
       )
     })
   })

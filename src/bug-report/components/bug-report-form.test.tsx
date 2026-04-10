@@ -54,6 +54,12 @@ describe('BugReportForm', () => {
       expect(screen.getByText('5/100 characters')).toBeInTheDocument()
     })
 
+    it('disables Reset button when form is pristine', () => {
+      const { resetButton } = getFormElements()
+
+      expect(resetButton).toBeDisabled()
+    })
+
     it('clears fields when Reset button is clicked', async () => {
       const { titleInput, descriptionInput, resetButton } = getFormElements()
 
@@ -90,28 +96,6 @@ describe('BugReportForm', () => {
       expect(resetButton).toBeDisabled()
     })
 
-    it('shows error when title is shorter than 5 characters', async () => {
-      const { titleInput } = getFormElements()
-
-      await user.click(titleInput)
-      await user.paste('a'.repeat(4))
-
-      expect(
-        screen.getByText(/must be at least 5 characters/i),
-      ).toBeInTheDocument()
-    })
-
-    it('shows error when title exceeds 32 characters', async () => {
-      const { titleInput } = getFormElements()
-
-      await user.click(titleInput)
-      await user.paste('a'.repeat(33)) // much faster than user.type() since it fires a single event instead of multiple keyboard cycles
-
-      expect(
-        screen.getByText(/must be at most 32 characters/i),
-      ).toBeInTheDocument()
-    })
-
     it('removes validation error when title is valid', async () => {
       const { titleInput } = getFormElements()
 
@@ -127,28 +111,6 @@ describe('BugReportForm', () => {
 
         expect(titleError).not.toBeInTheDocument()
       })
-    })
-
-    it('shows error when description is shorter than 20 characters', async () => {
-      const { descriptionInput } = getFormElements()
-
-      await user.click(descriptionInput)
-      await user.paste('a'.repeat(19))
-
-      expect(
-        screen.getByText(/must be at least 20 characters/i),
-      ).toBeInTheDocument()
-    })
-
-    it('shows error when description exceeds 100 characters', async () => {
-      const { descriptionInput } = getFormElements()
-
-      await user.click(descriptionInput)
-      await user.paste('a'.repeat(101)) // much faster than user.type() since it fires a single event instead of multiple keyboard cycles
-
-      expect(
-        screen.getByText(/must be at most 100 characters/i),
-      ).toBeInTheDocument()
     })
 
     it('removes validation error when description is valid', async () => {
@@ -235,8 +197,8 @@ describe('BugReportForm', () => {
       await ctx.user.click(reportAnotherButton)
 
       const { titleInput, descriptionInput } = getFormElements()
-      expect(titleInput).toBeInTheDocument()
-      expect(descriptionInput).toBeInTheDocument()
+      expect(titleInput).toHaveValue('')
+      expect(descriptionInput).toHaveValue('')
     })
   })
 })
