@@ -28,18 +28,21 @@ const NO_SELECTION = '__NONE__'
 type SelectFieldProps<T extends string> = React.ComponentProps<
   typeof SelectTrigger
 > & {
-  label: string
+  label?: string
   description?: string
   options: readonly T[]
   optionsGroupLabel?: string
   placeholder?: string
   required?: boolean
+  invalid?: boolean
   showClearSelection?: boolean
 }
 
 function SelectField<T extends string>({
   className,
   description,
+  id,
+  invalid,
   label,
   options,
   optionsGroupLabel,
@@ -51,14 +54,18 @@ function SelectField<T extends string>({
   // undefined belongs on the field value type (representing "no selection"), not on the options constraint
   const field = useFieldContext<T | undefined>()
 
-  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+  const isInvalid =
+    invalid ?? (field.state.meta.isTouched && !field.state.meta.isValid)
 
   return (
     <Field data-invalid={isInvalid}>
-      <FieldLabel htmlFor={field.name}>
-        {label} {required && <span className="text-destructive">*</span>}
-      </FieldLabel>
+      {label && (
+        <FieldLabel htmlFor={field.name}>
+          {label} {required && <span className="text-destructive">*</span>}
+        </FieldLabel>
+      )}
       {description && <FieldDescription>{description}</FieldDescription>}
+
       <Select
         name={field.name}
         // Value adapter to ensure React always treats the component
@@ -73,7 +80,7 @@ function SelectField<T extends string>({
       >
         <SelectTrigger
           {...props}
-          id={field.name}
+          id={id ?? field.name}
           onBlur={field.handleBlur}
           aria-invalid={isInvalid}
           aria-describedby={[props['aria-describedby'], `${field.name}-error`]

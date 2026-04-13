@@ -1,5 +1,8 @@
+export { default as CheckboxField } from './checkbox-field'
 export { default as FieldSetField } from './fieldset-field'
 export { FormCard, FormCardSkeleton } from './form-card'
+export { default as PasswordField } from './password-field'
+export { default as PasswordFields } from './password-fields'
 export { default as ResetButton } from './reset-button'
 export { default as SelectField } from './select-field'
 export { default as SubmitButton } from './submit-button'

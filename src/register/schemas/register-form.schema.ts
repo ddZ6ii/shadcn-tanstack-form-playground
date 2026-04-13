@@ -1,53 +1,9 @@
 import z from 'zod'
 
 import { deepStripUndefined } from '@/register/utilities'
+import { passwordFieldsSchema } from '@/shared/schemas'
 
 const LEVELS = ['beginner', 'intermediate', 'expert'] as const
-
-const PASSWORD_RULES = {
-  min: [12, 'Password must be at least 12 characters'] as const,
-  max: [128, 'Password must be at most 128 characters'] as const,
-  patterns: [
-    {
-      value: /[A-Z]/,
-      message: 'Password must contain at least 1 uppercase letter',
-    },
-    {
-      value: /[a-z]/,
-      message: 'Password must contain at least 1 lowercase letter',
-    },
-    { value: /[0-9]/, message: 'Password must contain at least 1 number' },
-    {
-      value: /[^A-Za-z0-9]/,
-      message: 'Password must contain at least 1 special character',
-    },
-  ],
-} as const
-
-const ADDRESS_RULES = {
-  street: {
-    min: [2, 'Street must be at least 2 characters'],
-    max: [100, 'Street cannot exceed 100 characters'],
-  },
-  city: {
-    min: [2, 'City must be at least 2 characters'],
-    max: [50, 'City cannot exceed 50 characters'],
-  },
-  zip: {
-    min: [3, 'ZIP must be at least 3 characters'],
-    max: [10, 'ZIP cannot exceed 10 characters'],
-    patterns: [
-      {
-        value: /^[A-Z0-9][A-Z0-9\s-]{1,8}[A-Z0-9]$/i, // loose catch (3–10 alphanumeric chars, spaces, hyphens)
-        message: 'Invalid ZIP format',
-      },
-    ],
-  },
-  country: {
-    min: [2, 'Country must be at least 2 characters'],
-    max: [50, 'Country cannot exceed 50 characters'],
-  },
-} as const
 
 const REQUIREMENTS = {
   firstName: {
@@ -62,8 +18,30 @@ const REQUIREMENTS = {
     min: [18, 'You must be at least 18 years old'],
     max: [120, 'Please enter a valid age'],
   },
-  password: PASSWORD_RULES,
-  address: ADDRESS_RULES,
+  address: {
+    street: {
+      min: [2, 'Street must be at least 2 characters'],
+      max: [100, 'Street cannot exceed 100 characters'],
+    },
+    city: {
+      min: [2, 'City must be at least 2 characters'],
+      max: [50, 'City cannot exceed 50 characters'],
+    },
+    zip: {
+      min: [3, 'ZIP must be at least 3 characters'],
+      max: [10, 'ZIP cannot exceed 10 characters'],
+      patterns: [
+        {
+          value: /^[A-Z0-9][A-Z0-9\s-]{1,8}[A-Z0-9]$/i, // loose catch (3–10 alphanumeric chars, spaces, hyphens)
+          message: 'Invalid ZIP format',
+        },
+      ],
+    },
+    country: {
+      min: [2, 'Country must be at least 2 characters'],
+      max: [50, 'Country cannot exceed 50 characters'],
+    },
+  },
   skill: {
     min: [2, 'Skill name must be at least 2 characters'],
     max: [50, 'Skill name must be at most 50 characters'],
@@ -81,11 +59,11 @@ const skillNameValidator = z
   .toLowerCase()
 
 const skillLevelValidator = z.enum(LEVELS, {
-  error: 'Skill level is required.',
+  error: 'Skill level is required',
 })
 
-const schema = z
-  .object({
+const registerFormSchema = passwordFieldsSchema
+  .extend({
     firstName: z
       .string()
       .trim()
@@ -111,15 +89,6 @@ const schema = z
       .max(...REQUIREMENTS.age.max)
       .optional(),
     email: z.email('Invalid email address'),
-    password: PASSWORD_RULES.patterns.reduce(
-      (s, { value, message }) => s.regex(value, message),
-      z
-        .string()
-        .trim()
-        .min(...REQUIREMENTS.password.min)
-        .max(...REQUIREMENTS.password.max),
-    ),
-    confirmPassword: z.string(),
     // Address is either fully filled out or left blank.
     // Partial fills will error on the empty fields, but a completely blank address will be treated as undefined (optional).
     address: z.optional(
@@ -132,39 +101,45 @@ const schema = z
             | { street: string; city: string; zip: string; country: string }
             | undefined,
         ) => {
+          const normalized = {
+            street: val?.street ?? '',
+            city: val?.city ?? '',
+            zip: val?.zip ?? '',
+            country: val?.country ?? '',
+          }
           if (val && typeof val === 'object') {
-            const allEmpty = Object.values(val).every(
+            const allEmpty = Object.values(normalized).every(
               (v) => v.trim().length === 0,
             )
             if (allEmpty) return undefined
           }
-          return val
+          return normalized
         },
         z
           .object({
             street: z
               .string()
               .trim()
-              .min(...ADDRESS_RULES.street.min)
-              .max(...ADDRESS_RULES.street.max),
+              .min(...REQUIREMENTS.address.street.min)
+              .max(...REQUIREMENTS.address.street.max),
             city: z
               .string()
               .trim()
-              .min(...ADDRESS_RULES.city.min)
-              .max(...ADDRESS_RULES.city.max),
-            zip: ADDRESS_RULES.zip.patterns.reduce(
+              .min(...REQUIREMENTS.address.city.min)
+              .max(...REQUIREMENTS.address.city.max),
+            zip: REQUIREMENTS.address.zip.patterns.reduce(
               (schema, { value, message }) => schema.regex(value, message),
               z
                 .string()
                 .trim()
-                .min(...ADDRESS_RULES.zip.min)
-                .max(...ADDRESS_RULES.zip.max),
+                .min(...REQUIREMENTS.address.zip.min)
+                .max(...REQUIREMENTS.address.zip.max),
             ),
             country: z
               .string()
               .trim()
-              .min(...ADDRESS_RULES.country.min)
-              .max(...ADDRESS_RULES.country.max),
+              .min(...REQUIREMENTS.address.country.min)
+              .max(...REQUIREMENTS.address.country.max),
           })
           .optional(),
       ),
@@ -183,25 +158,20 @@ const schema = z
     acceptTerms: z.boolean().refine((val) => val, {
       message: 'You must accept the terms and conditions',
     }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  })
-  // Recursively strips out undefined values from the final output (e.g. age or address if left blank)
+  }) // Recursively strips out undefined values from the final output (e.g. age or address if left blank)
   .transform(deepStripUndefined)
 
-type FormInput = z.input<typeof schema>
-type FormData = z.output<typeof schema>
+type RegisterFormInput = z.input<typeof registerFormSchema>
+type RegisterFormData = z.output<typeof registerFormSchema>
 type SkillLevel = z.infer<typeof skillLevelValidator>
 
 export {
   LEVELS,
   REQUIREMENTS,
-  schema,
+  registerFormSchema,
   skillLevelValidator,
   skillNameValidator,
   type SkillLevel,
-  type FormData,
-  type FormInput,
+  type RegisterFormData,
+  type RegisterFormInput,
 }

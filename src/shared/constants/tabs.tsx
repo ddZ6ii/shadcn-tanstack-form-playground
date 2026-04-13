@@ -19,7 +19,7 @@ const ExpenseTrackerForm = lazy(
 )
 
 const TOAST_OPTIONS: ExternalToast = {
-  position: 'top-center',
+  position: 'bottom-center',
   richColors: true,
 }
 

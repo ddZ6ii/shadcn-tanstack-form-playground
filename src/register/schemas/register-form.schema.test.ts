@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { REQUIREMENTS, schema } from './form.schema'
+import { REQUIREMENTS, registerFormSchema } from './register-form.schema'
 
 const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000'
+
 const VALID_PASSWORD = 'ValidPass1!xxx'
 
 const BASE = {
@@ -14,10 +15,10 @@ const BASE = {
   acceptTerms: true,
 } as const
 
-describe('schema', () => {
+describe('registerFormSchema', () => {
   describe('happy paths', () => {
     it('accepts a fully filled valid form', () => {
-      const result = schema.safeParse({
+      const result = registerFormSchema.safeParse({
         ...BASE,
         lastName: 'Smith',
         age: 25,
@@ -34,7 +35,7 @@ describe('schema', () => {
     })
 
     it('accepts a minimal form (all optional fields absent) and strips them from output', () => {
-      const result = schema.safeParse(BASE)
+      const result = registerFormSchema.safeParse(BASE)
 
       expect(result.success).toBe(true)
       if (!result.success) return
@@ -46,7 +47,10 @@ describe('schema', () => {
 
   describe('firstName', () => {
     it('trims whitespace', () => {
-      const result = schema.safeParse({ ...BASE, firstName: '  Alice  ' })
+      const result = registerFormSchema.safeParse({
+        ...BASE,
+        firstName: '  Alice  ',
+      })
 
       expect(result.success).toBe(true)
       if (!result.success) return
@@ -56,7 +60,7 @@ describe('schema', () => {
 
   describe('lastName', () => {
     it('empty string transforms to undefined — no error, key absent from output', () => {
-      const result = schema.safeParse({ ...BASE, lastName: '' })
+      const result = registerFormSchema.safeParse({ ...BASE, lastName: '' })
 
       expect(result.success).toBe(true)
       if (!result.success) return
@@ -64,7 +68,10 @@ describe('schema', () => {
     })
 
     it('valid string passes through', () => {
-      const result = schema.safeParse({ ...BASE, lastName: 'Smith' })
+      const result = registerFormSchema.safeParse({
+        ...BASE,
+        lastName: 'Smith',
+      })
 
       expect(result.success).toBe(true)
       if (!result.success) return
@@ -72,87 +79,12 @@ describe('schema', () => {
     })
   })
 
-  describe('password', () => {
-    it('rejects password missing an uppercase letter', () => {
-      const result = schema.safeParse({
-        ...BASE,
-        password: 'validpass1!xxx',
-        confirmPassword: 'validpass1!xxx',
-      })
-
-      expect(result.success).toBe(false)
-      if (result.success) return
-      const messages = result.error.issues.map((i) => i.message)
-      expect(messages).toContain(REQUIREMENTS.password.patterns[0].message)
-    })
-
-    it('rejects password missing a lowercase letter', () => {
-      const result = schema.safeParse({
-        ...BASE,
-        password: 'VALIDPASS1!XXX',
-        confirmPassword: 'VALIDPASS1!XXX',
-      })
-
-      expect(result.success).toBe(false)
-      if (result.success) return
-      const messages = result.error.issues.map((i) => i.message)
-      expect(messages).toContain(REQUIREMENTS.password.patterns[1].message)
-    })
-
-    it('rejects password missing a digit', () => {
-      const result = schema.safeParse({
-        ...BASE,
-        password: 'ValidPass!!xxx',
-        confirmPassword: 'ValidPass!!xxx',
-      })
-
-      expect(result.success).toBe(false)
-      if (result.success) return
-      const messages = result.error.issues.map((i) => i.message)
-      expect(messages).toContain(REQUIREMENTS.password.patterns[2].message)
-    })
-
-    it('rejects password missing a special character', () => {
-      const result = schema.safeParse({
-        ...BASE,
-        password: 'ValidPass1xxxxx',
-        confirmPassword: 'ValidPass1xxxxx',
-      })
-
-      expect(result.success).toBe(false)
-      if (result.success) return
-      const messages = result.error.issues.map((i) => i.message)
-      expect(messages).toContain(REQUIREMENTS.password.patterns[3].message)
-    })
-
-    it('rejects password shorter than 12 characters', () => {
-      const result = schema.safeParse({
-        ...BASE,
-        password: 'Valid1!',
-        confirmPassword: 'Valid1!',
-      })
-
-      expect(result.success).toBe(false)
-    })
-  })
-
-  describe('confirmPassword', () => {
-    it('errors on confirmPassword path when passwords do not match', () => {
-      const result = schema.safeParse({
-        ...BASE,
-        confirmPassword: 'DifferentPass1!',
-      })
-
-      expect(result.success).toBe(false)
-      if (result.success) return
-      const paths = result.error.issues.map((i) => i.path.join('.'))
-      expect(paths).toContain('confirmPassword')
-    })
-  })
-
   describe('email', () => {
     it('rejects an invalid email address', () => {
-      const result = schema.safeParse({ ...BASE, email: 'not-an-email' })
+      const result = registerFormSchema.safeParse({
+        ...BASE,
+        email: 'not-an-email',
+      })
 
       expect(result.success).toBe(false)
       if (result.success) return
@@ -163,7 +95,7 @@ describe('schema', () => {
 
   describe('age', () => {
     it('rejects age below 18', () => {
-      const result = schema.safeParse({ ...BASE, age: 17 })
+      const result = registerFormSchema.safeParse({ ...BASE, age: 17 })
 
       expect(result.success).toBe(false)
       if (result.success) return
@@ -172,7 +104,7 @@ describe('schema', () => {
     })
 
     it('rejects age above 120', () => {
-      const result = schema.safeParse({ ...BASE, age: 121 })
+      const result = registerFormSchema.safeParse({ ...BASE, age: 121 })
 
       expect(result.success).toBe(false)
       if (result.success) return
@@ -183,7 +115,7 @@ describe('schema', () => {
 
   describe('address', () => {
     it('all blank fields → preprocessed to undefined, no error', () => {
-      const result = schema.safeParse({
+      const result = registerFormSchema.safeParse({
         ...BASE,
         address: { street: '', city: '', zip: '', country: '' },
       })
@@ -194,7 +126,7 @@ describe('schema', () => {
     })
 
     it('partial fill errors on the empty fields', () => {
-      const result = schema.safeParse({
+      const result = registerFormSchema.safeParse({
         ...BASE,
         address: { street: '123 Main St', city: '', zip: '', country: '' },
       })
@@ -208,7 +140,7 @@ describe('schema', () => {
     })
 
     it('rejects an invalid ZIP format', () => {
-      const result = schema.safeParse({
+      const result = registerFormSchema.safeParse({
         ...BASE,
         address: {
           street: '123 Main St',
@@ -226,8 +158,17 @@ describe('schema', () => {
   })
 
   describe('skills', () => {
+    it('rejects skill name shorter than 2 characters', () => {
+      const result = registerFormSchema.safeParse({
+        ...BASE,
+        skills: [{ id: VALID_UUID, name: 'x', level: 'expert' }],
+      })
+
+      expect(result.success).toBe(false)
+    })
+
     it('rejects empty string level — pipes through enum and fails', () => {
-      const result = schema.safeParse({
+      const result = registerFormSchema.safeParse({
         ...BASE,
         skills: [{ id: VALID_UUID, name: 'typescript', level: '' }],
       })
@@ -236,7 +177,7 @@ describe('schema', () => {
     })
 
     it('lowercases skill name in output', () => {
-      const result = schema.safeParse({
+      const result = registerFormSchema.safeParse({
         ...BASE,
         skills: [{ id: VALID_UUID, name: 'TypeScript', level: 'expert' }],
       })
@@ -247,7 +188,7 @@ describe('schema', () => {
     })
 
     it('rejects a skill with an invalid UUID', () => {
-      const result = schema.safeParse({
+      const result = registerFormSchema.safeParse({
         ...BASE,
         skills: [{ id: 'not-a-uuid', name: 'typescript', level: 'expert' }],
       })
@@ -258,7 +199,10 @@ describe('schema', () => {
 
   describe('acceptTerms', () => {
     it('rejects false with the terms message', () => {
-      const result = schema.safeParse({ ...BASE, acceptTerms: false })
+      const result = registerFormSchema.safeParse({
+        ...BASE,
+        acceptTerms: false,
+      })
 
       expect(result.success).toBe(false)
       if (result.success) return

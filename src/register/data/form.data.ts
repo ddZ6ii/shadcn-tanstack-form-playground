@@ -1,7 +1,6 @@
-import type { FormInput } from '@/register/schemas'
+import type { RegisterFormInput } from '@/register/schemas'
 
-// Possible alternative to form initial values
-const defaultValues: FormInput = {
+const defaultValues: RegisterFormInput = {
   firstName: '',
   email: '',
   password: '',
@@ -10,8 +9,26 @@ const defaultValues: FormInput = {
   acceptTerms: false,
 }
 
+// Possible alternative to form initial values
+const alternateDefaultValues: RegisterFormInput = {
+  firstName: '',
+  lastName: '',
+  age: undefined,
+  email: '',
+  password: '',
+  confirmPassword: '',
+  address: {
+    street: '',
+    city: '',
+    zip: '',
+    country: '',
+  },
+  skills: [],
+  acceptTerms: false,
+}
+
 // Test values to quickly populate the form during development (can be removed later)
-const testValues: FormInput = {
+const testValues: RegisterFormInput = {
   firstName: 'John',
   // lastName: '',
   age: undefined,
@@ -40,4 +57,4 @@ const testValues: FormInput = {
   acceptTerms: true,
 }
 
-export { defaultValues, testValues }
+export { alternateDefaultValues, defaultValues, testValues }

@@ -53,11 +53,11 @@ function FormCardSkeleton({
     <Card {...props} className={cn('mx-auto w-full max-w-lg', className)}>
       {(title || description) && (
         <CardHeader>
-          {title && <Skeleton className="h-5 w-3/12" />}
+          {title && <Skeleton className="h-5 w-3/12!" />}
           {description && (
             <div className="space-y-2">
-              <Skeleton className="h-3.5 w-9/12" />
-              <Skeleton className="h-3.5 w-7/12" />
+              <Skeleton className="h-3.5 w-9/12!" />
+              <Skeleton className="h-3.5 w-7/12!" />
             </div>
           )}
         </CardHeader>

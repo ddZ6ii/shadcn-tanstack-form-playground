@@ -1,10 +1,10 @@
 export {
   LEVELS,
   REQUIREMENTS,
-  schema,
+  registerFormSchema,
   skillLevelValidator,
   skillNameValidator,
+  type RegisterFormData,
+  type RegisterFormInput,
   type SkillLevel,
-  type FormData,
-  type FormInput,
-} from './form.schema'
+} from './register-form.schema'

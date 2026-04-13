@@ -1,14 +1,14 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { RegisterForm } from '@/register/components'
-import type { FormData } from '@/register/schemas'
+import type { RegisterFormData } from '@/register/schemas'
 import { setupFormSubmission, withProvider } from '@/shared/tests/utils'
 
 const VALID_PASSWORD = 'ValidPass1!xxx'
 
-const validFormData: FormData = {
+const validFormData: RegisterFormData = {
   firstName: 'Alice',
   email: 'alice@example.com',
   password: VALID_PASSWORD,
@@ -28,16 +28,16 @@ describe('RegisterForm', () => {
       confirmPasswordInput: screen.getByLabelText(/^confirm password/i),
       acceptTermsCheckbox: screen.getByLabelText(/accept terms/i),
       submitButton: screen.getByRole('button', { name: /^submit$/i }),
+      resetButton: screen.getByRole('button', { name: /^reset$/i }),
     }
   }
 
-  // Non-submission related tests
   describe('form display', () => {
     beforeEach(() => {
       render(<RegisterFormWithProvider />)
     })
 
-    it('renders all required fields and submit button', () => {
+    it('renders all required fields and action buttons', () => {
       const {
         firstNameInput,
         emailInput,
@@ -45,6 +45,7 @@ describe('RegisterForm', () => {
         confirmPasswordInput,
         acceptTermsCheckbox,
         submitButton,
+        resetButton,
       } = getFormElements()
 
       expect(firstNameInput).toBeInTheDocument()
@@ -53,10 +54,78 @@ describe('RegisterForm', () => {
       expect(confirmPasswordInput).toBeInTheDocument()
       expect(acceptTermsCheckbox).toBeInTheDocument()
       expect(submitButton).toBeInTheDocument()
+      expect(resetButton).toBeInTheDocument()
+    })
+
+    it('renders optional personal fields', () => {
+      expect(screen.getByLabelText(/^last name/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/^age/i)).toBeInTheDocument()
+    })
+
+    it('renders address fields', () => {
+      expect(screen.getByLabelText(/^street/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/^city/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/^zip/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/^state/i)).toBeInTheDocument()
+    })
+
+    it('disables reset button when form is pristine', () => {
+      expect(getFormElements().resetButton).toBeDisabled()
+    })
+
+    it('shows "New Skill" button in skills section', () => {
+      expect(
+        screen.getByRole('button', { name: /add new skill/i }),
+      ).toBeInTheDocument()
+    })
+
+    it('clicking "New Skill" shows an inline skill name input', async () => {
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: /add new skill/i }))
+
+      expect(screen.getByLabelText(/skill name/i)).toBeInTheDocument()
+    })
+
+    it('committing a skill name via Enter adds it to the list', async () => {
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: /add new skill/i }))
+      await user.type(screen.getByLabelText(/skill name/i), 'TypeScript')
+      await user.keyboard('{Enter}')
+
+      expect(await screen.findByText(/typescript/i)).toBeInTheDocument()
+      expect(screen.queryByLabelText(/skill name/i)).not.toBeInTheDocument()
+    })
+
+    it('pressing Escape on a new skill removes the entry', async () => {
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: /add new skill/i }))
+      await user.keyboard('{Escape}')
+
+      await waitFor(() =>
+        expect(screen.queryByLabelText(/skill name/i)).not.toBeInTheDocument(),
+      )
+    })
+
+    it('clicking delete removes a committed skill from the list', async () => {
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: /add new skill/i }))
+      await user.type(screen.getByLabelText(/skill name/i), 'TypeScript')
+      await user.keyboard('{Enter}')
+
+      await user.click(
+        await screen.findByRole('button', { name: /delete skill typescript/i }),
+      )
+
+      await waitFor(() =>
+        expect(screen.queryByText(/typescript/i)).not.toBeInTheDocument(),
+      )
     })
   })
 
-  // Validation related tests (requires form submission to trigger validation)
   describe('form validation', () => {
     let user: ReturnType<typeof userEvent.setup>
 
@@ -99,9 +168,8 @@ describe('RegisterForm', () => {
     })
   })
 
-  // Happy path submission related tests (need fake timers + onSubmit)
   describe('form submission', () => {
-    const ctx = setupFormSubmission<FormData>(RegisterFormWithProvider)
+    const ctx = setupFormSubmission<RegisterFormData>(RegisterFormWithProvider)
 
     async function fillAndSubmitValidForm(
       u: ReturnType<typeof userEvent.setup>,
@@ -143,7 +211,7 @@ describe('RegisterForm', () => {
       void ctx.user.click(submitButton)
 
       const submittingButton = await screen.findByRole('button', {
-        name: /submitting/i,
+        name: /submit\.\.\./i,
       })
 
       expect(submittingButton).toBeInTheDocument()
