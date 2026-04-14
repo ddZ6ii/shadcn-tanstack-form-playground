@@ -1,6 +1,14 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 
 import { ExpenseTrackerForm } from '@/expense-tracker/components'
 import { CATEGORIES } from '@/expense-tracker/schemas'
@@ -17,6 +25,36 @@ const validFormData = {
 } satisfies FormData
 
 describe('ExpenseTrackerForm', () => {
+  // Radix Select's FocusScope schedules a 0ms setTimeout for focus-restore on unmount.
+  // React 19 commits useSyncExternalStore subscriber updates (Field, LocalSubscribe,
+  // SelectItem) via the concurrent scheduler (MessageChannel, not faked), so they land
+  // after RTL's asyncWrapper restores IS_REACT_ACT_ENVIRONMENT=true — outside any act()
+  // scope. This is a known library-compatibility limitation; suppress these specific
+  // warnings so they don't obscure real failures.
+  beforeAll(() => {
+    const original = console.error.bind(console)
+    // React logs act() warnings in two forms:
+    //   1. console.error(formatStr, componentName) — "An update to %s inside a test..."
+    //      args[0] contains the format string ("%s"), args[1] is the component name.
+    //   2. console.error(fullStr) — "A component suspended inside an `act` scope..."
+    //      args[0] is the full message string.
+    vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      const fmt = typeof args[0] === 'string' ? args[0] : ''
+      if (
+        (fmt.includes('not wrapped in act') &&
+          /^(Field|LocalSubscribe|SelectItem)$/.test(
+            typeof args[1] === 'string' ? args[1] : '',
+          )) ||
+        fmt.includes('the `act` call was not awaited')
+      )
+        return
+      original(...args)
+    })
+  })
+  afterAll(() => {
+    vi.mocked(console.error).mockRestore()
+  })
+
   function getFormElements() {
     return {
       descriptionInput: screen.getByLabelText(/description/i),
@@ -106,7 +144,7 @@ describe('ExpenseTrackerForm', () => {
         // Radix renders both a hidden native <option> (for form submission) and a visible <span> in the portal. findByText matches both.
         // Use findByRole('option') instead — it targets only the Radix dropdown items.
         const name = new RegExp(category, 'i')
-        const option = await screen.findByRole('option', {
+        const option = screen.getByRole('option', {
           name,
         })
         expect(option).toBeInTheDocument()
@@ -124,12 +162,17 @@ describe('ExpenseTrackerForm', () => {
       await user.click(
         await screen.findByRole('option', { name: categoryName }),
       )
+      await waitFor(() =>
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument(),
+      )
 
       await user.click(resetButton)
 
-      expect(descriptionInput).toHaveValue('')
-      expect(amountInput).toHaveValue(null)
-      expect(screen.getByText(/select a category/i)).toBeInTheDocument()
+      await waitFor(() => {
+        expect(descriptionInput).toHaveValue('')
+        expect(amountInput).toHaveValue(null)
+        expect(screen.getByText(/select a category/i)).toBeInTheDocument()
+      })
     })
   })
 
@@ -200,6 +243,10 @@ describe('ExpenseTrackerForm', () => {
           name,
         }),
       )
+      // Wait for Radix to finish closing, then flush its timer-based focus effects
+      await waitFor(() =>
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument(),
+      )
 
       await u.click(submitButton)
     }
@@ -234,7 +281,7 @@ describe('ExpenseTrackerForm', () => {
           name,
         }),
       )
-      // Wait for Radix to finish closing
+      // Wait for Radix to finish closing, then flush its timer-based focus effects
       await waitFor(() =>
         expect(screen.queryByRole('listbox')).not.toBeInTheDocument(),
       )
@@ -249,18 +296,33 @@ describe('ExpenseTrackerForm', () => {
       expect(amountInput).toBeDisabled()
       expect(submitButton).toBeDisabled()
       expect(resetButton).toBeDisabled()
+
+      // Drain the in-flight submission so no state updates leak outside act() at cleanup
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ctx.ms)
+        // flush 0ms timeouts (e.g. Radix focus cleanup) scheduled during unmount
+        await vi.advanceTimersByTimeAsync(1)
+      })
     })
 
     it('calls onSubmit with correct form data', async () => {
       await submitValidForm(ctx.user)
-      await vi.advanceTimersByTimeAsync(ctx.ms)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ctx.ms)
+        // flush 0ms timeouts (e.g. Radix focus cleanup) scheduled during unmount
+        await vi.advanceTimersByTimeAsync(1)
+      })
 
       expect(ctx.mockOnSubmit).toHaveBeenCalledWith(validFormData)
     })
 
     it('shows success screen after valid form submission', async () => {
       await submitValidForm(ctx.user)
-      await vi.advanceTimersByTimeAsync(ctx.ms)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ctx.ms)
+        // flush 0ms timeouts (e.g. Radix focus cleanup) scheduled during unmount
+        await vi.advanceTimersByTimeAsync(1)
+      })
 
       const { heading, addNewExpenseButton } = await getSuccessScreenElements()
       expect(heading).toBeInTheDocument()
@@ -273,7 +335,11 @@ describe('ExpenseTrackerForm', () => {
       await ctx.user.type(descriptionInput, validFormData.description)
       await ctx.user.type(amountInput, validFormData.amount.toString())
       await ctx.user.click(submitButton)
-      await vi.advanceTimersByTimeAsync(ctx.ms)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ctx.ms)
+        // flush 0ms timeouts (e.g. Radix focus cleanup) scheduled during unmount
+        await vi.advanceTimersByTimeAsync(1)
+      })
 
       expect(ctx.mockOnSubmit).toHaveBeenCalledWith({
         description: validFormData.description,
@@ -283,7 +349,11 @@ describe('ExpenseTrackerForm', () => {
 
     it('returns to form when Add New Expense is clicked', async () => {
       await submitValidForm(ctx.user)
-      await vi.advanceTimersByTimeAsync(ctx.ms)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ctx.ms)
+        // flush 0ms timeouts (e.g. Radix focus cleanup) scheduled during unmount
+        await vi.advanceTimersByTimeAsync(1)
+      })
 
       const { addNewExpenseButton } = await getSuccessScreenElements()
       await ctx.user.click(addNewExpenseButton)

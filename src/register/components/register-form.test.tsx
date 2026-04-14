@@ -91,7 +91,8 @@ describe('RegisterForm', () => {
       const user = userEvent.setup()
 
       await user.click(screen.getByRole('button', { name: /add new skill/i }))
-      await user.type(screen.getByLabelText(/skill name/i), 'TypeScript')
+      await user.click(screen.getByLabelText(/skill name/i))
+      await user.paste('TypeScript')
       await user.keyboard('{Enter}')
 
       expect(await screen.findByText(/typescript/i)).toBeInTheDocument()
@@ -113,7 +114,8 @@ describe('RegisterForm', () => {
       const user = userEvent.setup()
 
       await user.click(screen.getByRole('button', { name: /add new skill/i }))
-      await user.type(screen.getByLabelText(/skill name/i), 'TypeScript')
+      await user.click(screen.getByLabelText(/skill name/i))
+      await user.paste('TypeScript')
       await user.keyboard('{Enter}')
 
       await user.click(
@@ -183,10 +185,18 @@ describe('RegisterForm', () => {
         submitButton,
       } = getFormElements()
 
-      await u.type(firstNameInput, validFormData.firstName)
-      await u.type(emailInput, validFormData.email)
-      await u.type(passwordInput, validFormData.password)
-      await u.type(confirmPasswordInput, validFormData.confirmPassword)
+      await u.click(firstNameInput)
+      await u.paste(validFormData.firstName)
+
+      await u.click(emailInput)
+      await u.paste(validFormData.email)
+
+      await u.click(passwordInput)
+      await u.paste(validFormData.password)
+
+      await u.click(confirmPasswordInput)
+      await u.paste(validFormData.confirmPassword)
+
       await u.click(acceptTermsCheckbox)
       await u.click(submitButton)
     }
@@ -201,10 +211,18 @@ describe('RegisterForm', () => {
         submitButton,
       } = getFormElements()
 
-      await ctx.user.type(firstNameInput, validFormData.firstName)
-      await ctx.user.type(emailInput, validFormData.email)
-      await ctx.user.type(passwordInput, validFormData.password)
-      await ctx.user.type(confirmPasswordInput, validFormData.confirmPassword)
+      await ctx.user.click(firstNameInput)
+      await ctx.user.paste(validFormData.firstName)
+
+      await ctx.user.click(emailInput)
+      await ctx.user.paste(validFormData.email)
+
+      await ctx.user.click(passwordInput)
+      await ctx.user.paste(validFormData.password)
+
+      await ctx.user.click(confirmPasswordInput)
+      await ctx.user.paste(validFormData.confirmPassword)
+
       await ctx.user.click(acceptTermsCheckbox)
 
       // Fire-and-forget to observe the loading state before it resolves

@@ -7,10 +7,11 @@ import { withProvider } from '@/shared/tests/utils'
 const AppWithProvider = withProvider(App)
 
 describe('App', () => {
-  it('renders the Playground heading', () => {
+  it('renders the Playground heading', async () => {
     render(<AppWithProvider />)
 
-    const heading = screen.getByRole('heading', {
+    // findByRole (async) lets lazy-loaded Suspense boundaries resolve within act()
+    const heading = await screen.findByRole('heading', {
       name: /Shadcn \+ React Hook Form Playground/i,
     })
 
